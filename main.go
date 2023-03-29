@@ -16,12 +16,9 @@ import (
 var secret *string
 
 func main() {
-	flag.StringVar(secret, "secret", "", "")
+	secret = flag.String("secret", "", "密钥")
 	flag.Parse()
 
-	if secret == nil {
-		panic("no input secret")
-	}
 	g := GoogleAuthenticator2FaSha1{
 		Base32NoPaddingEncodedSecret: *secret,
 		ExpireSecond:                 30,
