@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"net/url"
+	"os"
 	"testing"
 	"time"
 )
@@ -16,15 +17,22 @@ import (
 var secret *string
 
 func main() {
+	envSecret := os.Getenv("google_auth_secret")
 	secret = flag.String("secret", "", "密钥")
 	flag.Parse()
 
+	if !(secret != nil && len(*secret) > 0) {
+		secret = &envSecret
+	}
 	g := GoogleAuthenticator2FaSha1{
 		Base32NoPaddingEncodedSecret: *secret,
 		ExpireSecond:                 30,
 		Digits:                       6,
 	}
-	out, _ := g.Totp()
+	out, err := g.Totp()
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println(out)
 }
 
@@ -50,7 +58,8 @@ func (m *GoogleAuthenticator2FaSha1) Totp() (code string, err error) {
 
 // QrString google authenticator 扫描二维码的二维码字符串
 func (m *GoogleAuthenticator2FaSha1) QrString(label, issuer string) (qr string) {
-	issuer = url.QueryEscape(label) //有一些小程序MFA不支持
+	//有一些小程序MFA不支持
+	issuer = url.QueryEscape(label)
 	//规范文档 https://github.com/google/google-authenticator/wiki/Key-Uri-Format
 	//otpauth://totp/ACME%20Co:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
 	return fmt.Sprintf(`otpauth://totp/%s?secret=%s&issuer=%s&algorithm=SHA1&digits=%d&period=%d`, label, m.Base32NoPaddingEncodedSecret, issuer, m.Digits, m.ExpireSecond)
@@ -60,7 +69,10 @@ func hotp(key []byte, counter uint64, digits int) int {
 	//RFC 6238
 	//只支持sha1
 	h := hmac.New(sha1.New, key)
-	binary.Write(h, binary.BigEndian, counter)
+	err := binary.Write(h, binary.BigEndian, counter)
+	if err != nil {
+		panic(err)
+	}
 	sum := h.Sum(nil)
 	//取sha1的最后4byte
 	//0x7FFFFFFF 是long int的最大值

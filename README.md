@@ -9,6 +9,9 @@ jumpserver的多因子认证
 ```bash
 # 请将xxx 替换为自己密钥
 ./google-authenticator -secret xxx
+# 或者 设置secret 为环境变量
+# linux and mac export google_auth_secret=xxx
+./google-authenticator
 ```
 
 ## 编译
